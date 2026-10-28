@@ -1,0 +1,5 @@
+# Құпия және уақытша файлдарды GitHub-қа жүктемеу
+.env
+.DS_Store
+Thumbs.db
+*.log
