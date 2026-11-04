@@ -59,3 +59,25 @@
 - Тіркелу/кіру, сессия және рөлдерді енгізу.
 - Жазылуларды қосу, көру, өңдеу және жою (CRUD).
 - Сервер жағындағы іздеу/сүзгі және қауіпсіздік тексерістері.
+
+
+## 10-апта: PHP және серверлік құрылым
+
+- HTML интерфейстер PHP беттеріне көшірілді: `index.php`, `services.php`, `booking.php`, `login.php`, `register.php`.
+- Қайталанатын Header және Footer `includes/header.php`, `includes/footer.php` файлдарына бөлінді (`include/require_once`).
+- MySQL дерекқорына қосылу PDO арқылы `config/database.php` ішінде орындалады.
+- Тіркелу: серверлік валидация, email қайталануын тексеру және `password_hash()`.
+- Кіру: `password_verify()` және PHP Session.
+- Жазылу формасы `$_POST` арқылы өңделіп, `vehicles` және `appointments` кестелеріне сақталады.
+- Қызметтер бетінде `$_GET` арқылы іздеу және санат бойынша сүзу бар.
+- SQL сұраныстарында Prepared Statements, ал экранға шығаруда `htmlspecialchars()` қолданылады.
+
+### XAMPP-та іске қосу
+1. `autoservice_management` бумасын `C:\xampp\htdocs\` ішіне орналастырыңыз.
+2. XAMPP Control Panel ішінде Apache және MySQL қызметтерін іске қосыңыз.
+3. `http://localhost/phpmyadmin` ашып, `database/schema.sql` файлын Import арқылы импорттаңыз.
+4. `config/database.php` ішіндегі MySQL логин/парольді өз ортаңызға сәйкестендіріңіз.
+5. `http://localhost/autoservice_management/` мекенжайын ашыңыз.
+6. Алдымен тіркеліңіз, содан кейін жүйеге кіріп, қызметке жазылу формасын тексеріңіз.
+
+> Ескерту: бұл оқу жобасының жергілікті XAMPP ортасына арналған нұсқасы. Өндірістік ортаға жариялау үшін қосымша CSRF қорғанысы, HTTPS, rate limiting және әкімші рөлдерін тексеру қажет.
