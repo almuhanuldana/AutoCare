@@ -1,4 +1,3 @@
-
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -43,8 +42,14 @@ $isLoggedIn = isset($_SESSION['user_id']);
            href="booking.php">Жазылу</a>
 
         <?php if ($isLoggedIn): ?>
+
+            <a class="<?= $activePage === 'appointments' ? 'active' : '' ?>"
+               href="appointments.php">Менің жазылуларым</a>
+
             <a href="logout.php">Шығу</a>
+
         <?php else: ?>
+
             <a class="<?= $activePage === 'login' ? 'active' : '' ?>"
                href="login.php">Кіру</a>
 
@@ -52,6 +57,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
                href="register.php">
                 Тіркелу <span>↗</span>
             </a>
+
         <?php endif; ?>
     </nav>
 </header>
