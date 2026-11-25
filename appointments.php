@@ -75,12 +75,18 @@ $params = [':user_id' => $userId];
 
 if ($search !== '') {
     $where .= " AND (
-        s.service_name LIKE :search
-        OR v.make LIKE :search
-        OR v.model LIKE :search
-        OR v.plate_number LIKE :search
+        s.service_name LIKE :search_service
+        OR v.make LIKE :search_make
+        OR v.model LIKE :search_model
+        OR v.plate_number LIKE :search_plate
     )";
-    $params[':search'] = '%' . $search . '%';
+
+    $searchValue = '%' . $search . '%';
+
+    $params[':search_service'] = $searchValue;
+    $params[':search_make'] = $searchValue;
+    $params[':search_model'] = $searchValue;
+    $params[':search_plate'] = $searchValue;
 }
 
 if ($category !== 'all') {
