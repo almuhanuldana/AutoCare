@@ -1,4 +1,3 @@
-
 <?php
 $pageTitle = 'Жазылуды өңдеу';
 $activePage = 'appointments';
@@ -9,10 +8,17 @@ require_once __DIR__ . '/config/database.php';
 $userId = (int)$_SESSION['user_id'];
 $error = '';
 
+// CSRF токенін дайындау
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrfToken = $_SESSION['csrf_token'];
+
 function h($value) {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
+// Жазылу ID-сін тексеру
 $id = filter_var($_GET['id'] ?? $_POST['id'] ?? null, FILTER_VALIDATE_INT);
 
 if (!$id || $id < 1) {
@@ -44,6 +50,7 @@ $servicesStmt = $pdo->query("
 ");
 $services = $servicesStmt->fetchAll();
 
+// Қолжетімді уақыттар
 $validTimes = [
     '09:00', '10:00', '11:00', '12:00',
     '14:00', '15:00', '16:00', '17:00'
@@ -51,6 +58,15 @@ $validTimes = [
 
 // Форманы өңдеу
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // CSRF токенін тексеру
+    $postedToken = $_POST['csrf_token'] ?? '';
+
+    if (!is_string($postedToken) || !hash_equals($csrfToken, $postedToken)) {
+        http_response_code(403);
+        exit('Қауіпсіздік тексерісінен өту мүмкін болмады. Бетті жаңартып көріңіз.');
+    }
+
     $make = trim($_POST['make'] ?? '');
     $model = trim($_POST['model'] ?? '');
     $plate = trim($_POST['plate_number'] ?? '');
@@ -59,24 +75,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $time = $_POST['appointment_time'] ?? '';
     $notes = trim($_POST['notes'] ?? '');
 
-    if ($make === '' || $model === '' || !$serviceId || $date === '' || $time === '') {
+    // Күннің нақты бар-жоғын тексеру
+    $dateObject = DateTime::createFromFormat('!Y-m-d', $date);
+    $validDate = $dateObject && $dateObject->format('Y-m-d') === $date;
+
+    if (
+        $make === '' ||
+        $model === '' ||
+        !$serviceId ||
+        $date === '' ||
+        $time === ''
+    ) {
         $error = 'Барлық міндетті өрісті толтырыңыз.';
-    } elseif (strlen($make) > 80 || strlen($model) > 80 || strlen($plate) > 20) {
+
+    } elseif (
+        strlen($make) > 80 ||
+        strlen($model) > 80 ||
+        strlen($plate) > 20
+    ) {
         $error = 'Көлік туралы енгізілген мәлімет тым ұзын.';
-    } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || $date < date('Y-m-d')) {
+
+    } elseif (
+        !$validDate ||
+        $date < date('Y-m-d')
+    ) {
         $error = 'Күнді дұрыс таңдаңыз. Өткен күнге жазылуға болмайды.';
+
     } elseif (!in_array($time, $validTimes, true)) {
         $error = 'Уақытты тізімнен таңдаңыз.';
+
     } elseif (mb_strlen($notes) > 1000) {
         $error = 'Түсініктеме 1000 таңбадан аспауы керек.';
+
     } else {
-        $serviceCheck = $pdo->prepare(
-            'SELECT id FROM services WHERE id = ? AND is_active = 1'
-        );
+        // Қызметтің белсенді екенін тексеру
+        $serviceCheck = $pdo->prepare("
+            SELECT id
+            FROM services
+            WHERE id = ? AND is_active = 1
+        ");
         $serviceCheck->execute([$serviceId]);
 
         if (!$serviceCheck->fetch()) {
             $error = 'Қызмет дұрыс таңдалмаған.';
+
         } else {
             try {
                 $pdo->beginTransaction();
@@ -84,7 +126,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Көлік мәліметтерін жаңарту
                 $vehicleStmt = $pdo->prepare("
                     UPDATE vehicles
-                    SET make = ?, model = ?, plate_number = ?
+                    SET make = ?,
+                        model = ?,
+                        plate_number = ?
                     WHERE id = ? AND user_id = ?
                 ");
 
@@ -96,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $userId
                 ]);
 
-                // Жазылуды жаңарту
+                // Жазылу мәліметтерін жаңарту
                 $updateStmt = $pdo->prepare("
                     UPDATE appointments
                     SET service_id = ?,
@@ -157,6 +201,7 @@ require_once __DIR__ . '/includes/header.php';
         <form class="form-panel" method="POST" action="edit_appointment.php">
 
             <input type="hidden" name="id" value="<?= (int)$id ?>">
+            <input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
 
             <?php if ($error): ?>
                 <div class="notice"><?= h($error) ?></div>
