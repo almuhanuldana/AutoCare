@@ -53,6 +53,7 @@ HTML файлдары 9-аптадағы статикалық frontend нұсқ�
 
 ```text
 AutoCare/
+├── .gitignore
 ├── config/
 │   └── database.php
 ├── css/
@@ -74,6 +75,11 @@ AutoCare/
 │   ├── week-11.md
 │   ├── week-12.md
 │   └── week-13.md
+├── index.html
+├── services.html
+├── booking.html
+├── login.html
+├── register.html
 ├── index.php
 ├── services.php
 ├── booking.php
