@@ -3,3 +3,65 @@
 @media(max-width:1000px){.site-header{padding:0 4%}.main-nav{gap:16px}.hero,.section,.page-hero,.catalog-section{padding-left:5%;padding-right:5%}.hero{grid-template-columns:1fr 1fr}.hero-stats{gap:20px}.booking-layout{padding-left:5%;padding-right:5%}.service-grid,.catalog-grid{gap:12px}.service-card{padding:20px}.booking-banner{margin-left:5%;margin-right:5%}.site-footer{padding-left:5%;padding-right:5%}}
 @media(max-width:760px){.site-header{height:72px;padding:0 5%}.menu-toggle{display:block}.main-nav{display:none;position:absolute;top:71px;left:0;right:0;padding:18px 5% 22px;background:#fff;box-shadow:0 18px 30px #14233312;flex-direction:column;align-items:stretch;gap:17px}.main-nav.open{display:flex}.main-nav .nav-cta{text-align:center}.hero{grid-template-columns:1fr;padding-top:54px;gap:15px}.hero h1{font-size:54px}.hero-visual{min-height:330px;margin-top:15px}.visual-glow{width:300px;height:300px}.car-card{width:94%}.floating-note{left:0;bottom:17px}.hero-stats{margin-top:35px}.section{padding-top:60px;padding-bottom:60px}.section-heading{align-items:start;flex-direction:column}.section-heading h2{font-size:31px}.service-grid,.catalog-grid{grid-template-columns:1fr}.service-card p{min-height:0}.booking-banner{padding:30px;align-items:start;flex-direction:column;margin-bottom:55px}.booking-banner h2{font-size:28px}.site-footer{flex-wrap:wrap}.site-footer p{order:3;width:100%;margin-bottom:0}.page-hero{padding-top:50px}.page-hero h1{font-size:42px;letter-spacing:-2px}.catalog-toolbar{flex-wrap:wrap}.search-box{max-width:none;flex-basis:100%}.catalog-toolbar select{flex:1}.result-count{margin-left:0}.booking-layout{grid-template-columns:1fr;padding-bottom:55px}.form-panel{padding:22px}.form-grid{grid-template-columns:1fr}.wide-field{grid-column:auto}.form-heading{align-items:start;gap:12px;flex-direction:column}.auth-main{grid-template-columns:1fr}.auth-decoration{min-height:250px;padding:30px}.auth-mark{width:65px;height:65px;font-size:38px;border-radius:20px}.auth-decoration p{font-size:18px;margin:15px 0 8px}.auth-orbit{width:300px;height:300px}.orbit-two{width:380px;height:380px}.auth-panel{padding:42px 7%;width:100%;max-width:500px}.auth-panel h1{font-size:32px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
+
+/* Week 13 - Pagination */
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 35px;
+}
+
+.pagination a {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    transition: 0.2s;
+}
+
+.pagination a:hover,
+.pagination a.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+}
+
+.pagination-info {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.catalog-toolbar {
+    flex-wrap: wrap;
+}
+
+.catalog-toolbar select {
+    max-width: 240px;
+}
+
+@media (max-width: 760px) {
+    .catalog-toolbar select {
+        max-width: none;
+        width: 100%;
+    }
+
+    .pagination a {
+        min-width: 35px;
+        height: 36px;
+        padding: 0 10px;
+    }
+}
