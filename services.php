@@ -24,8 +24,8 @@ if (!in_array($category, $allowedCategories, true)) {
 $sort = $_GET['sort'] ?? 'newest';
 
 $allowedSorts = [
-    'newest' => 'id DESC',
-    'oldest' => 'id ASC',
+    'newest' => 'created_at DESC, id DESC',
+    'oldest' => 'created_at ASC, id ASC',
     'price_asc' => 'base_price ASC',
     'price_desc' => 'base_price DESC',
     'name_asc' => 'service_name ASC',
