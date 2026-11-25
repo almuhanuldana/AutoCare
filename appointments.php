@@ -1,4 +1,3 @@
-
 <?php
 $pageTitle = 'Менің жазылуларым';
 $activePage = 'appointments';
@@ -6,31 +5,55 @@ $activePage = 'appointments';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/config/database.php';
 
-$userId = (int)$_SESSION['user_id'];
+$userId = (int) $_SESSION['user_id'];
 $error = '';
 $success = '';
+
+// CSRF токенін жасау
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrfToken = $_SESSION['csrf_token'];
 
 function h($value) {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
+// Күннің нақты дұрыстығын тексеру
+function isValidDate($date) {
+    if (!is_string($date) || $date === '') {
+        return false;
+    }
+
+    $dateObject = DateTime::createFromFormat('!Y-m-d', $date);
+
+    return $dateObject !== false
+        && $dateObject->format('Y-m-d') === $date;
+}
+
 // Жазылуды жою
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
-    $deleteId = filter_var($_POST['delete_id'], FILTER_VALIDATE_INT);
+    $postedToken = $_POST['csrf_token'] ?? '';
 
-    if ($deleteId) {
-        $deleteStmt = $pdo->prepare(
-            'DELETE FROM appointments WHERE id = ? AND user_id = ?'
-        );
-        $deleteStmt->execute([$deleteId, $userId]);
-
-        if ($deleteStmt->rowCount() > 0) {
-            $success = 'Жазылу сәтті жойылды.';
-        } else {
-            $error = 'Жазылу табылмады немесе оны жоюға рұқсатыңыз жоқ.';
-        }
+    if (!is_string($postedToken) || !hash_equals($csrfToken, $postedToken)) {
+        $error = 'Қауіпсіздік тексерісінен өту мүмкін болмады. Бетті жаңартып көріңіз.';
     } else {
-        $error = 'Жазылу нөмірі дұрыс емес.';
+        $deleteId = filter_var($_POST['delete_id'], FILTER_VALIDATE_INT);
+
+        if ($deleteId && $deleteId > 0) {
+            $deleteStmt = $pdo->prepare(
+                'DELETE FROM appointments WHERE id = ? AND user_id = ?'
+            );
+            $deleteStmt->execute([$deleteId, $userId]);
+
+            if ($deleteStmt->rowCount() > 0) {
+                $success = 'Жазылу сәтті жойылды.';
+            } else {
+                $error = 'Жазылу табылмады немесе оны жоюға рұқсатыңыз жоқ.';
+            }
+        } else {
+            $error = 'Жазылу нөмірі дұрыс емес.';
+        }
     }
 }
 
@@ -46,12 +69,21 @@ if (!in_array($category, $allowedCategories, true)) {
     $category = 'all';
 }
 
-if ($dateFrom !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+// Күндерді тексеру
+if ($dateFrom !== '' && !isValidDate($dateFrom)) {
     $dateFrom = '';
+    $error = 'Басталу күні дұрыс көрсетілмеген.';
 }
 
-if ($dateTo !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+if ($dateTo !== '' && !isValidDate($dateTo)) {
     $dateTo = '';
+    $error = 'Аяқталу күні дұрыс көрсетілмеген.';
+}
+
+if ($dateFrom !== '' && $dateTo !== '' && $dateFrom > $dateTo) {
+    $dateFrom = '';
+    $dateTo = '';
+    $error = 'Басталу күні аяқталу күнінен кейін болмауы керек.';
 }
 
 // Сұрыптау
@@ -115,11 +147,11 @@ $countSql = "
 
 $countStmt = $pdo->prepare($countSql);
 $countStmt->execute($params);
-$totalAppointments = (int)$countStmt->fetchColumn();
+$totalAppointments = (int) $countStmt->fetchColumn();
 
 // Пагинация
 $perPage = 5;
-$totalPages = max(1, (int)ceil($totalAppointments / $perPage));
+$totalPages = max(1, (int) ceil($totalAppointments / $perPage));
 
 $page = filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT);
 $page = $page && $page > 0 ? $page : 1;
@@ -153,7 +185,8 @@ $sql = "
 $stmt = $pdo->prepare($sql);
 
 foreach ($params as $key => $value) {
-    $stmt->bindValue($key, $value, PDO::PARAM_STR);
+    $type = $key === ':user_id' ? PDO::PARAM_INT : PDO::PARAM_STR;
+    $stmt->bindValue($key, $value, $type);
 }
 
 $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
@@ -166,6 +199,7 @@ $appointments = $stmt->fetchAll();
 function appointmentPageUrl($pageNumber) {
     $query = $_GET;
     $query['page'] = $pageNumber;
+
     return 'appointments.php?' . http_build_query($query);
 }
 
@@ -173,10 +207,12 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <main class="page-main">
+
     <section class="page-hero compact-hero">
         <div class="eyebrow">AUTOCARE / ЖЕКЕ КАБИНЕТ</div>
         <h1>Менің <span>жазылуларым.</span></h1>
         <p>Жазылуларыңызды көріңіз, іздеңіз, өңдеңіз немесе қажет болмаса жойыңыз.</p>
+
         <a class="button button-primary" href="booking.php">
             Жаңа жазылу қосу →
         </a>
@@ -226,8 +262,14 @@ require_once __DIR__ . '/includes/header.php';
                 <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Жаңадан қосылған</option>
             </select>
 
-            <button class="button button-primary" type="submit">Іздеу және сүзу</button>
-            <a class="button button-outline" href="appointments.php">Тазалау</a>
+            <button class="button button-primary" type="submit">
+                Іздеу және сүзу
+            </button>
+
+            <a class="button button-outline" href="appointments.php">
+                Тазалау
+            </a>
+
         </form>
 
         <p class="result-count">
@@ -238,6 +280,7 @@ require_once __DIR__ . '/includes/header.php';
 
             <div style="overflow-x:auto;">
                 <table style="width:100%; border-collapse:collapse; min-width:850px;">
+
                     <thead>
                         <tr style="background:#f1f6ff; text-align:left;">
                             <th style="padding:13px;">№</th>
@@ -253,12 +296,17 @@ require_once __DIR__ . '/includes/header.php';
                     <tbody>
                     <?php foreach ($appointments as $item): ?>
                         <tr style="border-bottom:1px solid #e2e8ee;">
-                            <td style="padding:13px;"><?= (int)$item['id'] ?></td>
+
+                            <td style="padding:13px;">
+                                <?= (int)$item['id'] ?>
+                            </td>
 
                             <td style="padding:13px;">
                                 <?= h($item['make'] . ' ' . $item['model']) ?>
+
                                 <?php if ($item['plate_number']): ?>
-                                    <br><small><?= h($item['plate_number']) ?></small>
+                                    <br>
+                                    <small><?= h($item['plate_number']) ?></small>
                                 <?php endif; ?>
                             </td>
 
@@ -279,38 +327,61 @@ require_once __DIR__ . '/includes/header.php';
                             </td>
 
                             <td style="padding:13px;">
-                                <a class="button button-outline"
-                                   href="edit_appointment.php?id=<?= (int)$item['id'] ?>">
+
+                                <a
+                                    class="button button-outline"
+                                    href="edit_appointment.php?id=<?= (int)$item['id'] ?>"
+                                >
                                     Өңдеу
                                 </a>
 
-                                <form method="POST"
-                                      action="appointments.php"
-                                      onsubmit="return confirm('Осы жазылуды жойғыңыз келе ме?');"
-                                      style="display:inline-block; margin-top:5px;">
-                                    <input type="hidden" name="delete_id" value="<?= (int)$item['id'] ?>">
+                                <form
+                                    method="POST"
+                                    action="appointments.php"
+                                    onsubmit="return confirm('Осы жазылуды жойғыңыз келе ме?');"
+                                    style="display:inline-block; margin-top:5px;"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= h($csrfToken) ?>"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="delete_id"
+                                        value="<?= (int)$item['id'] ?>"
+                                    >
+
                                     <button class="button button-outline" type="submit">
                                         Жою
                                     </button>
                                 </form>
+
                             </td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
+
                 </table>
             </div>
 
         <?php else: ?>
+
             <div class="empty-state">
                 Жазылулар табылмады. Сүзгілерді өзгертіп көріңіз немесе жаңа жазылу қосыңыз.
             </div>
+
         <?php endif; ?>
 
         <?php if ($totalPages > 1): ?>
+
             <nav class="pagination" aria-label="Жазылулар беттері">
 
                 <?php if ($page > 1): ?>
-                    <a href="<?= h(appointmentPageUrl($page - 1)) ?>">← Алдыңғы</a>
+                    <a href="<?= h(appointmentPageUrl($page - 1)) ?>">
+                        ← Алдыңғы
+                    </a>
                 <?php endif; ?>
 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
@@ -323,10 +394,13 @@ require_once __DIR__ . '/includes/header.php';
                 <?php endfor; ?>
 
                 <?php if ($page < $totalPages): ?>
-                    <a href="<?= h(appointmentPageUrl($page + 1)) ?>">Келесі →</a>
+                    <a href="<?= h(appointmentPageUrl($page + 1)) ?>">
+                        Келесі →
+                    </a>
                 <?php endif; ?>
 
             </nav>
+
         <?php endif; ?>
 
         <div class="pagination-info">
